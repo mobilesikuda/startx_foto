@@ -3,4 +3,5 @@
     <string name="image_content_desc">Your photo</string>
     <string name="need_permission">Нужны разрешения камеры</string>
     <string name="denied_toast">Разрешения не даны</string>
+    <string name="something_wrong">Что-то пощло не так</string>
 </resources>

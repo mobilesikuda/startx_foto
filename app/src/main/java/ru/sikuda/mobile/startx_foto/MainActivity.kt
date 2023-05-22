@@ -1,29 +1,34 @@
 package ru.sikuda.mobile.startx_foto
 
 import android.Manifest
-import android.app.Activity
+import android.content.res.Resources
 import android.graphics.Bitmap
-import android.net.Uri
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
-import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.launch
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -31,52 +36,82 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale
-import androidx.core.content.FileProvider
 import coil.compose.AsyncImage
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.PermissionState
+import com.google.accompanist.permissions.rememberPermissionState
 import ru.sikuda.mobile.startx_foto.ui.theme.Startx_fotoTheme
-import java.io.File
 
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         setContent {
             Startx_fotoTheme {
-
-//                val result = remember {mutableStateOf<Bitmap?>(null)}
-//                val launcher = registerForActivityResult(ActivityResultContracts.TakePicturePreview()) {
-//                    result.value = it
-//                }
-                // A surface container using the 'background' color from the theme
-                //RegisterForActivityResult33(result, launcher)
-                MainScreen()
+                RegisterForActivityResult33()
+                //MainScreen()
             }
         }
     }
-
-    private fun getTmpFileUri(): Uri {
-        val tmpFile = File.createTempFile("tmp_image_file", ".png", cacheDir).apply {
-            createNewFile()
-            deleteOnExit()
-        }
-        return FileProvider.getUriForFile(applicationContext, "$packageName.provider", tmpFile)
-    }
 }
 
+val placeHolderBitmap: Bitmap = BitmapFactory.decodeResource(
+    Resources.getSystem(),
+    android.R.drawable.ic_menu_camera
+)
+
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun RegisterForActivityResult33(
-    result: MutableState<Bitmap?>,
-    launcher: ActivityResultLauncher<Void?>
-) {
+fun RegisterForActivityResult33() {
 
-    Button(onClick = { launcher.launch() }) {
-        Text(text = "Take a picture")
+    val cameraPermission: PermissionState = cameraPermissionState()
+    var resultBitmap: Bitmap? by rememberSaveable { mutableStateOf(placeHolderBitmap) }
+    val launcherForImageCapture = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) {
+        resultBitmap = if (it.toString().isEmpty()) {
+            placeHolderBitmap
+        } else {
+            it
+        }
     }
 
-    result.value?.let { image ->
-        Image(image.asImageBitmap(), null, modifier = Modifier.fillMaxWidth())
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .height(100.dp)
+            .width(100.dp)
+            .clip(shape = CircleShape)
+            .border(
+                width = 1.dp,
+                color = Color.Gray,
+                shape = CircleShape
+            )
+    ) {
+        resultBitmap?.asImageBitmap()?.let {
+            Image(
+                bitmap = it,
+                contentDescription = "Captured image",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(150.dp)
+                    .clickable {
+                        if (cameraPermission.hasPermission) {
+                            launcherForImageCapture.launch()
+                        } else if (!cameraPermission.hasPermission) {
+                            cameraPermission.launchPermissionRequest()
+                        }
+                    }
+            )
+        }
     }
+
+}
+
+@OptIn(ExperimentalPermissionsApi::class)
+@Composable
+fun cameraPermissionState(): PermissionState {
+    return rememberPermissionState(permission = Manifest.permission.CAMERA)
 }
 
 @Composable
@@ -105,7 +140,7 @@ fun MainScreen() {
         Button(
             //modifier = Modifier.size(72.dp),
             onClick = {
-//                if (shouldShowRequestPermissionRationale(Activity(), Manifest.permission.CAMERA)) {
+//                if (shouldShowRequestPermissionRationale(htis, Manifest.permission.CAMERA)) {
 //                    // we need to tell user why do we need permission
 //                    showToast(R.string.need_permission)
 //                } else {
@@ -132,6 +167,3 @@ fun MainPreview() {
     }
 }
 
-private fun showToast(textId: Int) {
-    //Toast.makeText(this, textId, Toast.LENGTH_SHORT).show()
-}
