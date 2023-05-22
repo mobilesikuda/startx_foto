@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionState
+import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberPermissionState
 import ru.sikuda.mobile.startx_foto.ui.theme.Startx_fotoTheme
 
@@ -48,8 +49,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             Startx_fotoTheme {
-                RegisterForActivityResult33()
-                //MainScreen()
+                //RegisterForActivityResult33()
+                MainScreen()
             }
         }
     }
@@ -96,9 +97,9 @@ fun RegisterForActivityResult33() {
                 modifier = Modifier
                     .size(150.dp)
                     .clickable {
-                        if (cameraPermission.hasPermission) {
+                        if (cameraPermission.status == PermissionStatus.Granted) {
                             launcherForImageCapture.launch()
-                        } else if (!cameraPermission.hasPermission) {
+                        } else  {
                             cameraPermission.launchPermissionRequest()
                         }
                     }
@@ -114,8 +115,21 @@ fun cameraPermissionState(): PermissionState {
     return rememberPermissionState(permission = Manifest.permission.CAMERA)
 }
 
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun MainScreen() {
+
+    val cameraPermission: PermissionState = cameraPermissionState()
+    var resultBitmap: Bitmap? by rememberSaveable { mutableStateOf(placeHolderBitmap) }
+    val launcherForImageCapture = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) {
+        resultBitmap = if (it.toString().isEmpty()) {
+            placeHolderBitmap
+        } else {
+            it
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -123,29 +137,30 @@ fun MainScreen() {
             .background(Color.DarkGray),
         contentAlignment = Alignment.Center
     ) {
-//            Image(
-//                painterResource(R.drawable.ic_launcher_background),
-//                contentDescription = "Take photo",
-//                contentScale = ContentScale.Crop,
-//                modifier = Modifier.fillMaxSize()
-//             )
+        resultBitmap?.asImageBitmap()?.let {
+            Image(
+                bitmap = it,
+                contentDescription = "Captured image",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
 
-        AsyncImage(
-            model = "",
-            contentDescription = stringResource(R.string.image_content_desc),
-            modifier = Modifier.fillMaxSize(),
-            alignment = Alignment.Center
-        )
+//        AsyncImage(
+//            model = "",
+//            contentDescription = stringResource(R.string.image_content_desc),
+//            modifier = Modifier.fillMaxSize(),
+//            alignment = Alignment.Center
+//        )
 
         Button(
             //modifier = Modifier.size(72.dp),
             onClick = {
-//                if (shouldShowRequestPermissionRationale(htis, Manifest.permission.CAMERA)) {
-//                    // we need to tell user why do we need permission
-//                    showToast(R.string.need_permission)
-//                } else {
-//                    //cameraPermission.launch(Manifest.permission.CAMERA)
-//                }
+                if (cameraPermission.status == PermissionStatus.Granted) {
+                            launcherForImageCapture.launch()
+                        } else {
+                            cameraPermission.launchPermissionRequest()
+                        }
             }
         ) {
             Image(
