@@ -101,7 +101,7 @@ fun MainScreenPreview() {
     val launcherForImageCapture = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicturePreview()
     ) {
-        resultBitmap = if (!it.toString().isEmpty()) {
+        resultBitmap = if (it.toString().isNotEmpty()) {
             placeHolderBitmap
         } else {
             it
